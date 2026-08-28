@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mis Tareas</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#17C3B2">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mis Tareas">
+<meta name="mobile-web-app-capable" content="yes">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg: #F1F9F8;
+    --surface: #FFFFFF;
+    --surface-2: #EAF6F5;
+    --ink: #1F3B3A;
+    --muted: #7A9694;
+    --line: #DCEEEC;
+    --gold: #17C3B2;
+    --gold-ink: #FFFFFF;
+    --pop: #FFB067;
+    --danger: #EF6F6C;
+    --radius: 10px;
+    --font-display: ui-rounded, 'Baloo 2', 'Century Gothic', 'Futura', 'Avenir Next', ui-sans-serif, sans-serif;
+    --font-body: ui-rounded, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, ui-sans-serif, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{
+    background:
+      radial-gradient(circle at 6% 8%, rgba(23,195,178,.10) 0, transparent 45%),
+      radial-gradient(circle at 94% 4%, rgba(255,176,103,.14) 0, transparent 40%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    min-height:100vh;
+    min-height:100dvh;
+    padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  }
+  .wrap{max-width:1100px;margin:0 auto;}
+  input, select, textarea{font-size:16px;} /* evita el zoom automático de iOS al enfocar */
+  @keyframes wiggle{
+    0%,100%{transform:rotate(0deg);}
+    25%{transform:rotate(-8deg);}
+    75%{transform:rotate(8deg);}
+  }
+  @keyframes pop-in{
+    0%{transform:scale(.9);opacity:0;}
+    100%{transform:scale(1);opacity:1;}
+  }
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:16px;flex-wrap:wrap;margin-bottom:22px;
+  }
+  .brand-eyebrow{
+    font-family:var(--font-display);
+    letter-spacing:.14em;text-transform:uppercase;
+    font-size:11px;color:var(--gold);margin:0 0 4px;
+  }
+  .brand-title{
+    font-family:var(--font-display);
+    font-size:30px;margin:0;font-weight:800;letter-spacing:.01em;
+  }
+  .brand-title .wave{display:inline-block;transform-origin:70% 70%;}
+  .brand-title:hover .wave{animation:wiggle .5s ease;}
+  .btn{
+    border:none;border-radius:999px;padding:11px 20px;font-size:14px;
+    font-weight:700;cursor:pointer;font-family:var(--font-body);
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, opacity .12s ease;
+  }
+  .btn:hover{transform:translateY(-2px) scale(1.03);}
+  .btn:active{transform:scale(.96);}
+  .btn-primary{background:var(--gold);color:var(--gold-ink);box-shadow:0 6px 16px rgba(23,195,178,.35);}
+  .btn-primary:hover{opacity:.95;box-shadow:0 8px 18px rgba(23,195,178,.45);}
+  .btn-ghost{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+  .btn-danger{background:transparent;color:var(--danger);border:1.5px solid var(--danger);}
+
+  nav.tabs{
+    display:flex;gap:4px;background:var(--surface);border:1.5px solid var(--line);
+    border-radius:999px;padding:5px;margin-bottom:24px;width:max-content;max-width:100%;overflow-x:auto;
+    box-shadow:0 2px 10px rgba(31,59,58,.05);
+  }
+  nav.tabs button{
+    background:transparent;border:none;color:var(--muted);padding:10px 18px;
+    border-radius:999px;font-size:13.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+    font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease, color .15s ease;
+  }
+  nav.tabs button.active{background:var(--gold);color:var(--gold-ink);transform:scale(1.05);box-shadow:0 4px 12px rgba(23,195,178,.35);}
+  nav.tabs button:not(.active):hover{color:var(--gold);}
+
+  /* ===== Org chart view ===== */
+  .chart{display:flex;flex-direction:column;align-items:center;padding-top:6px;}
+  .chart-root{
+    background:linear-gradient(135deg,var(--gold),#0FA396);
+    color:var(--gold-ink);font-family:var(--font-display);font-weight:800;
+    padding:15px 30px;border-radius:999px;font-size:15px;letter-spacing:.04em;
+    text-transform:uppercase;position:relative;box-shadow:0 8px 20px rgba(23,195,178,.3);
+    animation:pop-in .35s ease;
+  }
+  .chart-root::after{content:'';position:absolute;bottom:-26px;left:50%;transform:translateX(-1px);width:2px;height:26px;background:var(--line);}
+  .trunk-line{width:100%;max-width:960px;height:2px;background:var(--line);margin-top:0;}
+  .branches{
+    display:flex;gap:22px;justify-content:center;flex-wrap:wrap;
+    padding-top:26px;width:100%;max-width:1000px;
+  }
+  .branch{position:relative;display:flex;flex-direction:column;align-items:stretch;min-width:230px;flex:1 1 230px;max-width:270px;}
+  .branch::before{content:'';position:absolute;top:-26px;left:50%;width:2px;height:26px;background:var(--line);}
+  .branch-header{
+    border-radius:16px;padding:11px 14px;font-family:var(--font-display);
+    font-weight:800;font-size:13px;text-align:center;letter-spacing:.02em;
+    color:var(--ink);box-shadow:0 3px 10px rgba(31,59,58,.08);
+  }
+  .branch-count{font-weight:400;opacity:.75;font-size:11.5px;}
+  .branch-tasks{margin-top:14px;position:relative;padding-left:22px;display:flex;flex-direction:column;gap:9px;min-height:8px;}
+  .branch-tasks::before{content:'';position:absolute;left:9px;top:0;bottom:10px;width:2px;background:var(--line);}
+  .task-node{
+    position:relative;background:var(--surface);border:1.5px solid var(--line);
+    border-radius:14px;padding:10px 12px;font-size:12.5px;cursor:pointer;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease, border-color .15s ease;
+  }
+  .task-node::before{content:'';position:absolute;left:-13px;top:16px;width:13px;height:2px;background:var(--line);}
+  .task-node:hover{border-color:var(--gold);transform:translateY(-3px) rotate(-1deg);box-shadow:0 6px 14px rgba(31,59,58,.1);}
+  .task-node.important{border-color:var(--pop);background:linear-gradient(135deg,rgba(255,176,103,.14),rgba(255,176,103,.03));}
+  .task-node .t-title{font-weight:600;display:flex;align-items:center;gap:5px;}
+  .task-node .t-meta{color:var(--muted);margin-top:3px;font-size:11.5px;}
+  .branch-empty{color:var(--muted);font-size:11.5px;padding-left:22px;font-style:italic;}
+
+  /* ===== Agenda view ===== */
+  .agenda-controls{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+  select, input, textarea{
+    background:var(--surface-2);border:1.5px solid var(--line);color:var(--ink);
+    border-radius:11px;padding:9px 11px;font-size:13.5px;font-family:var(--font-body);
+  }
+  select:focus, input:focus, textarea:focus{outline:2px solid var(--gold);outline-offset:1px;}
+  .day-group{margin-bottom:22px;}
+  .day-label{
+    font-family:var(--font-display);font-size:13px;color:var(--gold);
+    text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px;
+    border-bottom:1px solid var(--line);padding-bottom:6px;
+  }
+  .item-row{
+    display:flex;align-items:flex-start;gap:12px;background:var(--surface);
+    border:1.5px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:9px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .item-row:hover{box-shadow:0 4px 12px rgba(31,59,58,.06);}
+  .item-row.important{border-color:var(--pop);}
+  .item-row.done{opacity:.5;}
+  .item-row.done .item-title{text-decoration:line-through;}
+  .chip{
+    width:9px;height:9px;border-radius:50%;margin-top:6px;flex-shrink:0;
+  }
+  .item-body{flex:1;min-width:0;}
+  .item-title{font-weight:600;font-size:14px;}
+  .item-sub{color:var(--muted);font-size:12px;margin-top:2px;}
+  .item-notes{color:var(--muted);font-size:12px;margin-top:4px;line-height:1.4;}
+  .item-actions{display:flex;gap:6px;flex-shrink:0;}
+  .icon-btn{
+    background:transparent;border:1.5px solid var(--line);color:var(--muted);
+    border-radius:10px;width:32px;height:32px;cursor:pointer;font-size:14px;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), border-color .15s ease, color .15s ease;
+  }
+  .icon-btn:hover{border-color:var(--gold);color:var(--gold);transform:scale(1.1);}
+
+  .empty-state{
+    text-align:center;color:var(--muted);padding:60px 20px;font-size:14px;
+  }
+  .empty-state .es-emoji{display:block;font-size:38px;margin-bottom:8px;}
+  .empty-state strong{display:block;color:var(--ink);font-family:var(--font-display);font-size:17px;margin-bottom:6px;font-weight:800;}
+
+  /* ===== Important dates view ===== */
+  .imp-list{display:flex;flex-direction:column;gap:10px;}
+  .imp-card{
+    display:flex;align-items:center;gap:14px;background:var(--surface);
+    border:1.5px solid var(--pop);border-radius:16px;padding:14px 16px;cursor:pointer;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s ease;
+  }
+  .imp-card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(255,176,103,.25);}
+  .imp-date-box{
+    background:linear-gradient(135deg,var(--pop),#FF9142);color:#fff;border-radius:12px;
+    padding:8px 12px;text-align:center;font-family:var(--font-display);
+    min-width:58px;flex-shrink:0;
+  }
+  .imp-date-box .d{font-size:18px;font-weight:800;line-height:1;}
+  .imp-date-box .m{font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+  .imp-countdown{color:var(--pop);font-size:11.5px;font-weight:700;margin-top:2px;}
+
+  /* ===== Modal ===== */
+  .overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:20px;
+    padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;
+    animation:pop-in .2s cubic-bezier(.34,1.56,.64,1);
+  }
+  .modal h3{margin:0 0 16px;font-family:var(--font-display);font-size:17px;}
+  .field{margin-bottom:13px;display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:12px;color:var(--muted);font-weight:600;}
+  .field select, .field input, .field textarea{width:100%;}
+  .row2{display:flex;gap:10px;}
+  .row2 .field{flex:1;}
+  .check-field{display:flex;align-items:center;gap:8px;flex-direction:row;margin-top:2px;}
+  .check-field input{width:auto;}
+  .check-field label{font-size:13px;color:var(--ink);font-weight:500;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .mode-toggle{display:flex;gap:6px;background:var(--surface-2);border-radius:999px;padding:4px;}
+  .mode-btn{
+    flex:1;background:transparent;border:none;padding:10px 10px;border-radius:999px;
+    font-size:12.5px;font-weight:700;color:var(--muted);cursor:pointer;
+    font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease, color .15s ease;
+  }
+  .mode-btn.active{background:var(--gold);color:var(--gold-ink);transform:scale(1.02);}
+  .mode-btn:not(.active):hover{color:var(--gold);}
+
+  /* ===== Routine (rutina diaria) ===== */
+  .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;}
+  .preset-btn, .preset-btn-task{
+    font-size:11.5px;padding:6px 11px;border-radius:999px;border:1.5px solid var(--line);
+    background:var(--surface-2);color:var(--muted);cursor:pointer;font-weight:700;
+    font-family:var(--font-body);transition:border-color .15s ease, color .15s ease;
+  }
+  .preset-btn:hover, .preset-btn-task:hover{border-color:var(--gold);color:var(--gold);}
+  .day-picker{display:flex;gap:6px;flex-wrap:wrap;}
+  .day-chip, .day-chip-task{
+    width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);
+    background:var(--surface-2);color:var(--muted);font-size:12.5px;font-weight:800;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .day-chip.selected, .day-chip-task.selected{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.08);}
+  .routine-toolbar{display:flex;justify-content:flex-end;margin-bottom:16px;}
+  .routine-card{
+    display:flex;align-items:center;gap:14px;background:var(--surface);
+    border:1.5px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:9px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .routine-card:hover{box-shadow:0 4px 12px rgba(31,59,58,.06);}
+  .routine-time-box{
+    background:var(--surface-2);border-radius:12px;padding:8px 12px;text-align:center;
+    font-family:var(--font-display);min-width:64px;flex-shrink:0;color:var(--ink);
+    font-weight:800;font-size:13px;line-height:1.3;
+  }
+  .routine-days-badge{
+    display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:999px;
+    background:var(--surface-2);color:var(--gold);font-weight:700;margin-top:3px;
+  }
+  .routine-tag{
+    font-size:10px;padding:2px 7px;border-radius:999px;background:var(--surface-2);
+    color:var(--gold);font-weight:700;margin-left:6px;vertical-align:middle;
+  }
+
+  @media (max-width:600px){
+    .branches{gap:14px;}
+    .branch{max-width:100%;flex:1 1 100%;}
+    .branch::before{display:none;}
+    .chart-root::after{display:none;}
+  }
+
+  /* ===== Calendar (Día / Semana / Mes) ===== */
+  .cal-toolbar{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    gap:12px;margin-bottom:20px;
+  }
+  .cal-subtabs{
+    display:flex;gap:4px;background:var(--surface);border:1.5px solid var(--line);
+    border-radius:999px;padding:4px;
+  }
+  .cal-subtabs button{
+    background:transparent;border:none;color:var(--muted);padding:8px 15px;
+    border-radius:999px;font-size:12.5px;font-weight:700;cursor:pointer;
+    font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease, color .15s ease;
+  }
+  .cal-subtabs button.active{background:var(--gold);color:var(--gold-ink);}
+  .cal-subtabs button:not(.active):hover{color:var(--gold);}
+  .cal-label{font-family:var(--font-display);font-weight:800;font-size:15px;text-align:center;flex:1;}
+  .cal-nav{display:flex;align-items:center;gap:8px;}
+  .cal-filter-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .cal-filter-row select{min-width:170px;}
+  .cal-add-mini{
+    width:24px;height:24px;border-radius:50%;border:1.5px dashed var(--line);background:var(--surface-2);
+    color:var(--gold);font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:transform .15s cubic-bezier(.34,1.56,.64,1), border-color .15s ease, background .15s ease;
+    margin:6px auto 8px;line-height:1;padding:0;font-family:var(--font-body);
+  }
+  .cal-add-mini:hover{border-color:var(--gold);border-style:solid;background:var(--surface);transform:scale(1.15);}
+  .cal-month-cell{position:relative;}
+  .cal-add-mini-month{position:absolute;top:5px;right:5px;width:18px;height:18px;font-size:12px;margin:0;opacity:.5;}
+  .cal-add-mini-month:hover{opacity:1;}
+
+  .cal-day-list{display:flex;flex-direction:column;gap:9px;}
+  .cal-progress{margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+  .cal-progress-bar{flex:1;height:9px;background:var(--surface-2);border-radius:999px;overflow:hidden;}
+  .cal-progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),#0FA396);border-radius:999px;transition:width .3s ease;}
+  .cal-progress span{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap;}
+
+  .cal-week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
+  .cal-week-col{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:14px;
+    padding:10px;min-height:140px;
+  }
+  .cal-week-col.today{border-color:var(--gold);box-shadow:0 0 0 2px rgba(23,195,178,.15);}
+  .cal-week-day-label{
+    font-family:var(--font-display);font-weight:800;font-size:10.5px;text-align:center;
+    margin-bottom:8px;color:var(--muted);cursor:pointer;letter-spacing:.05em;
+  }
+  .cal-week-day-label .num{display:block;font-size:17px;color:var(--ink);margin-top:2px;}
+  .cal-week-col.today .cal-week-day-label .num{color:var(--gold);}
+  .cal-week-progress{display:block;font-size:9px;color:var(--gold);font-weight:700;margin-top:2px;}
+  .cal-week-event.done{opacity:.55;text-decoration:line-through;}
+  .cal-week-event{
+    font-size:10.5px;background:var(--surface-2);border-radius:8px;padding:5px 7px;
+    margin-bottom:5px;cursor:pointer;line-height:1.35;transition:transform .12s ease;
+  }
+  .cal-week-event:hover{transform:translateX(2px);}
+  .cal-week-event.important{box-shadow:inset 3px 0 0 var(--pop);}
+  .cal-week-event.routine{opacity:.85;}
+
+  .cal-month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;}
+  .cal-month-dow{text-align:center;font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;}
+  .cal-month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-month-cell{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
+    padding:7px;min-height:96px;cursor:pointer;transition:border-color .12s ease, box-shadow .12s ease;
+  }
+  .cal-month-cell:hover{border-color:var(--gold);box-shadow:0 3px 10px rgba(31,59,58,.06);}
+  .cal-month-cell.outside{opacity:.35;}
+  .cal-month-cell.today{border-color:var(--gold);background:linear-gradient(180deg,rgba(23,195,178,.09),transparent);}
+  .cal-month-date{font-size:12px;font-weight:800;color:var(--ink);}
+  .cal-month-events{display:flex;flex-direction:column;gap:3px;margin-top:6px;}
+  .cal-month-event-line{
+    font-size:9.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    background:var(--surface-2);border-left:3px solid var(--line);border-radius:4px;
+    padding:2px 5px;color:var(--ink);cursor:pointer;font-weight:600;
+  }
+  .cal-month-event-line:hover{background:var(--bg);}
+  .cal-month-event-line.done{opacity:.5;text-decoration:line-through;}
+  .cal-month-more{font-size:9px;color:var(--muted);margin-top:1px;font-weight:700;padding-left:5px;}
+
+  @media (max-width:700px){
+    .cal-label{order:-1;width:100%;text-align:left;}
+    .cal-week-grid{grid-auto-flow:column;grid-auto-columns:118px;grid-template-columns:none;overflow-x:auto;padding-bottom:6px;}
+    .cal-month-cell{min-height:78px;padding:5px;}
+    .cal-month-date{font-size:11px;}
+    .cal-month-event-line{font-size:8.5px;padding:1.5px 4px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <p class="brand-eyebrow">Panel personal</p>
+      <h1 class="brand-title">¿Qué planeas hacer? <span class="wave">🎯</span></h1>
+    </div>
+    <button class="btn btn-primary" id="btnNew">+ Nueva tarea</button>
+  </header>
+
+  <nav class="tabs">
+    <button data-view="chart" class="active">Calendario</button>
+    <button data-view="agenda">Agenda</button>
+    <button data-view="routine">Rutina diaria</button>
+    <button data-view="important">Fechas importantes</button>
+  </nav>
+
+  <div id="loadingMsg" style="color:var(--muted);font-size:13px;">Cargando tus tareas…</div>
+
+  <section id="view-chart" style="display:none;"></section>
+  <section id="view-agenda" style="display:none;"></section>
+  <section id="view-routine" style="display:none;"></section>
+  <section id="view-important" style="display:none;"></section>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modalTitle">Nueva tarea</h3>
+    <div class="field">
+      <label>Título</label>
+      <input type="text" id="fTitle" placeholder="Ej: Entrega taller de contabilidad">
+    </div>
+    <div class="field">
+      <label>Categoría</label>
+      <select id="fCategory">
+        <option value="Universidad">Universidad</option>
+        <option value="Inglés (Smart)">Inglés (Smart)</option>
+        <option value="Trabajo">Trabajo</option>
+        <option value="Hogar">Hogar</option>
+        <option value="Citas médicas">Citas médicas</option>
+        <option value="Personal">Personal</option>
+        <option value="__custom__">Otra… (escribir)</option>
+      </select>
+    </div>
+    <div class="field" id="fCustomWrap" style="display:none;">
+      <label>Nombre de la categoría</label>
+      <input type="text" id="fCustomCategory" placeholder="Ej: Iglesia">
+    </div>
+
+    <div class="field" id="modeToggleWrap">
+      <label>¿Cuándo la haces?</label>
+      <div class="mode-toggle">
+        <button type="button" class="mode-btn active" data-mode="once">📅 Fecha específica</button>
+        <button type="button" class="mode-btn" data-mode="recurring">🔁 Varios días</button>
+      </div>
+    </div>
+
+    <div id="onceFields">
+      <div class="row2">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field">
+          <label>Hora (opcional)</label>
+          <input type="time" id="fTime">
+        </div>
+      </div>
+    </div>
+
+    <div id="recurringFields" style="display:none;">
+      <div class="row2">
+        <div class="field">
+          <label>Hora inicio</label>
+          <input type="time" id="fStart">
+        </div>
+        <div class="field">
+          <label>Hora fin (opcional)</label>
+          <input type="time" id="fEnd">
+        </div>
+      </div>
+      <div class="field">
+        <label>¿Qué días?</label>
+        <div class="preset-row">
+          <button type="button" class="preset-btn-task" data-preset="weekdays">Entre semana (L-V)</button>
+          <button type="button" class="preset-btn-task" data-preset="weekend">Fin de semana</button>
+          <button type="button" class="preset-btn-task" data-preset="all">Todos los días</button>
+        </div>
+        <div class="day-picker">
+          <button type="button" class="day-chip-task" data-day="1">L</button>
+          <button type="button" class="day-chip-task" data-day="2">M</button>
+          <button type="button" class="day-chip-task" data-day="3">X</button>
+          <button type="button" class="day-chip-task" data-day="4">J</button>
+          <button type="button" class="day-chip-task" data-day="5">V</button>
+          <button type="button" class="day-chip-task" data-day="6">S</button>
+          <button type="button" class="day-chip-task" data-day="0">D</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <textarea id="fNotes" rows="2" placeholder="Detalles adicionales"></textarea>
+    </div>
+    <div class="check-field" id="importantFieldWrap">
+      <input type="checkbox" id="fImportant">
+      <label for="fImportant">Marcar como fecha importante</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancel">Cancelar</button>
+      <button class="btn btn-primary" id="btnSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayRoutine">
+  <div class="modal">
+    <h3 id="routineModalTitle">Nueva actividad diaria</h3>
+    <div class="field">
+      <label>Emoji (opcional)</label>
+      <input type="text" id="rEmoji" maxlength="4" placeholder="🔁" style="max-width:80px;">
+    </div>
+    <div class="field">
+      <label>Actividad</label>
+      <input type="text" id="rTitle" placeholder="Ej: Ejercicio">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Hora inicio</label>
+        <input type="time" id="rStart">
+      </div>
+      <div class="field">
+        <label>Hora fin (opcional)</label>
+        <input type="time" id="rEnd">
+      </div>
+    </div>
+    <div class="field">
+      <label>¿Qué días?</label>
+      <div class="preset-row">
+        <button type="button" class="preset-btn" data-preset="weekdays">Entre semana (L-V)</button>
+        <button type="button" class="preset-btn" data-preset="weekend">Fin de semana</button>
+        <button type="button" class="preset-btn" data-preset="all">Todos los días</button>
+      </div>
+      <div class="day-picker" id="rDayPicker">
+        <button type="button" class="day-chip" data-day="1">L</button>
+        <button type="button" class="day-chip" data-day="2">M</button>
+        <button type="button" class="day-chip" data-day="3">X</button>
+        <button type="button" class="day-chip" data-day="4">J</button>
+        <button type="button" class="day-chip" data-day="5">V</button>
+        <button type="button" class="day-chip" data-day="6">S</button>
+        <button type="button" class="day-chip" data-day="0">D</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnRoutineCancel">Cancelar</button>
+      <button class="btn btn-primary" id="btnRoutineSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACIÓN DE FIREBASE — pega aquí los datos de tu proyecto
+// (Firebase Console → ⚙️ Configuración del proyecto → Tus apps → Web)
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDNz0eHFswhcKswNrmchcacpN4Xj-QT7DA",
+  authDomain: "mi-app-de-tareas-a5483.firebaseapp.com",
+  databaseURL: "https://mi-app-de-tareas-a5483-default-rtdb.firebaseio.com",
+  projectId: "mi-app-de-tareas-a5483",
+  storageBucket: "mi-app-de-tareas-a5483.firebasestorage.app",
+  messagingSenderId: "152973134081",
+  appId: "1:152973134081:web:3ce8bc47da22689e2c3300"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Guarda todo bajo el nodo "mis-tareas" en tu base de datos,
+// por si algún día compartes el mismo proyecto con otras apps.
+const DB_ROOT = 'mis-tareas';
+
+async function dbGet(key){
+  try{
+    const snap = await db.ref(DB_ROOT + '/' + key).get();
+    return snap.exists() ? snap.val() : null;
+  }catch(e){
+    console.error('Error leyendo de Firebase:', e);
+    return null;
+  }
+}
+async function dbSet(key, value){
+  try{
+    await db.ref(DB_ROOT + '/' + key).set(value);
+    return true;
+  }catch(e){
+    console.error('Error guardando en Firebase:', e);
+    return false;
+  }
+}
+
+const STORAGE_KEY = 'tasks-v1';
+const ROUTINE_KEY = 'routines-v1';
+const ROUTINE_DONE_KEY = 'routine-done-v1';
+const PRESET_COLORS = {
+  'Universidad': '#8FD8D1',
+  'Inglés (Smart)': '#5FC6BC',
+  'Trabajo': '#C6D2D3',
+  'Hogar': '#AEE3DC',
+  'Citas médicas': '#B9C9CB',
+  'Personal': '#D6E4E3'
+};
+const PRESET_EMOJI = {
+  'Universidad': '🎓',
+  'Inglés (Smart)': '🗣️',
+  'Trabajo': '💼',
+  'Hogar': '🏡',
+  'Citas médicas': '🩺',
+  'Personal': '✨'
+};
+const FALLBACK_EMOJI = ['📌','🌟','🍀','🔥','🎯','📎'];
+function emojiFor(category){
+  if(PRESET_EMOJI[category]) return PRESET_EMOJI[category];
+  let hash = 0;
+  for(let i=0;i<category.length;i++) hash = category.charCodeAt(i) + ((hash<<5)-hash);
+  return FALLBACK_EMOJI[Math.abs(hash) % FALLBACK_EMOJI.length];
+}
+const FALLBACK_PALETTE = ['#9BD9D0','#C2CFD1','#7FC9BF','#D3DEDE','#A6D4CC','#BFCACB'];
+
+let tasks = [];
+let routines = [];
+let routineDone = {};
+let editingId = null;
+let editingRoutineId = null;
+let taskMode = 'once';
+let taskSelectedDays = [];
+let currentView = 'chart';
+const DAY_NAMES = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DAY_ABBR = ['D','L','M','X','J','V','S'];
+
+function colorFor(category){
+  if(PRESET_COLORS[category]) return PRESET_COLORS[category];
+  let hash = 0;
+  for(let i=0;i<category.length;i++) hash = category.charCodeAt(i) + ((hash<<5)-hash);
+  return FALLBACK_PALETTE[Math.abs(hash) % FALLBACK_PALETTE.length];
+}
+
+function uid(){ return 't' + Date.now() + Math.random().toString(36).slice(2,7); }
+
+const ALL_DAYS = [0,1,2,3,4,5,6];
+const WEEKDAYS = [1,2,3,4,5];
+const DEFAULT_ROUTINES = [
+  { title:'Levantarse', emoji:'', start:'05:00', end:'', days:ALL_DAYS, category:'Personal' },
+  { title:'Ejercicio', emoji:'🏃', start:'05:10', end:'05:40', days:ALL_DAYS, category:'Personal' },
+  { title:'Baño/arreglarse', emoji:'', start:'05:40', end:'06:10', days:ALL_DAYS, category:'Personal' },
+  { title:'Oración', emoji:'🙏', start:'06:10', end:'06:25', days:ALL_DAYS, category:'Personal' },
+  { title:'Biblia', emoji:'📖', start:'06:25', end:'06:40', days:ALL_DAYS, category:'Personal' },
+  { title:'Iglesia', emoji:'⛪', start:'06:50', end:'08:30', days:WEEKDAYS, category:'Personal' },
+  { title:'Iglesia', emoji:'⛪', start:'08:00', end:'10:00', days:[0], category:'Personal' }
+];
+
+async function loadTasks(){
+  try{
+    const val = await dbGet(STORAGE_KEY);
+    tasks = Array.isArray(val) ? val : (val ? Object.values(val) : []);
+  }catch(e){
+    tasks = [];
+  }
+  try{
+    const val2 = await dbGet(ROUTINE_KEY);
+    routines = Array.isArray(val2) ? val2 : (val2 ? Object.values(val2) : []);
+  }catch(e){
+    routines = [];
+  }
+  if(routines.length===0){
+    routines = DEFAULT_ROUTINES.map(r=>({id:uid(), ...r}));
+    saveRoutines();
+  } else {
+    let migrated = false;
+    routines.forEach(r=>{ if(!r.category){ r.category='Personal'; migrated=true; } });
+    if(migrated) saveRoutines();
+  }
+  try{
+    const val3 = await dbGet(ROUTINE_DONE_KEY);
+    routineDone = val3 || {};
+  }catch(e){
+    routineDone = {};
+  }
+  document.getElementById('loadingMsg').style.display='none';
+  render();
+}
+
+async function saveTasks(){
+  const ok = await dbSet(STORAGE_KEY, tasks);
+  if(!ok) console.error('No se pudo guardar en Firebase');
+}
+
+async function saveRoutines(){
+  const ok = await dbSet(ROUTINE_KEY, routines);
+  if(!ok) console.error('No se pudo guardar en Firebase');
+}
+
+async function saveRoutineDone(){
+  const ok = await dbSet(ROUTINE_DONE_KEY, routineDone);
+  if(!ok) console.error('No se pudo guardar en Firebase');
+}
+function routineKey(id,date){ return id+'|'+date; }
+function isRoutineDone(id,date){ return !!routineDone[routineKey(id,date)]; }
+function setRoutineDone(id,date,val){
+  if(val) routineDone[routineKey(id,date)] = true;
+  else delete routineDone[routineKey(id,date)];
+  saveRoutineDone();
+}
+
+function fmtDateLabel(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+function fmtShort(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  return { d: d.getDate(), m: months[d.getMonth()] };
+}
+function daysUntil(dateStr){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(dateStr + 'T00:00:00');
+  const diff = Math.round((d-today)/86400000);
+  if(diff === 0) return 'Hoy';
+  if(diff === 1) return 'Mañana';
+  if(diff < 0) return `Hace ${Math.abs(diff)} día(s)`;
+  return `En ${diff} días`;
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function routineDaysLabel(days){
+  const set = days.slice().sort().join(',');
+  if(set === '1,2,3,4,5') return 'L-V';
+  if(set === '0,1,2,3,4,5,6') return 'Todos los días';
+  if(set === '0,6') return 'Fin de semana';
+  if(days.length===1) return DAY_NAMES[days[0]];
+  return days.slice().sort().map(d=>DAY_ABBR[d]).join(' ');
+}
+
+function switchView(view){
+  currentView = view;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.getElementById('view-chart').style.display = view==='chart' ? 'block':'none';
+  document.getElementById('view-agenda').style.display = view==='agenda' ? 'block':'none';
+  document.getElementById('view-routine').style.display = view==='routine' ? 'block':'none';
+  document.getElementById('view-important').style.display = view==='important' ? 'block':'none';
+  render();
+}
+
+function render(){
+  if(currentView==='chart') renderChart();
+  if(currentView==='agenda') renderAgenda();
+  if(currentView==='routine') renderRoutine();
+  if(currentView==='important') renderImportant();
+}
+
+let calMode = 'month';
+let calRef = new Date();
+let calFilterCat = '';
+const DAY_ABBR3 = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const MONTHS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MONTHS_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+function toDateStr(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function startOfWeek(date){
+  const d = new Date(date);
+  const day = (d.getDay()+6)%7; // Lunes=0 ... Domingo=6
+  d.setDate(d.getDate()-day);
+  d.setHours(0,0,0,0);
+  return d;
+}
+function eventsForDate(dateStr){
+  const dayTasks = tasks.filter(t=>t.date===dateStr).map(t=>({...t, __kind:'task'}));
+  const weekday = new Date(dateStr+'T00:00:00').getDay();
+  const dayRoutines = routines
+    .filter(r=>r.days.includes(weekday) && r.category && r.category!=='Personal')
+    .map(r=>({...r, __kind:'routine', time:r.start, done:isRoutineDone(r.id,dateStr)}));
+  return [...dayTasks, ...dayRoutines].sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+}
+function routinesForDate(dateStr){
+  const weekday = new Date(dateStr+'T00:00:00').getDay();
+  return routines.filter(r=>r.days.includes(weekday)).map(r=>({...r, __kind:'routine', time:r.start, done:isRoutineDone(r.id,dateStr)})).sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+}
+function eventsForDateFiltered(dateStr){
+  if(calFilterCat==='__routine__') return routinesForDate(dateStr);
+  let events = eventsForDate(dateStr);
+  if(calFilterCat) events = events.filter(e=>e.category===calFilterCat);
+  return events;
+}
+function allCategoriesForFilter(){
+  const preset = Object.keys(PRESET_COLORS);
+  const seen = new Set([...tasks.map(t=>t.category), ...routines.map(r=>r.category).filter(Boolean)]);
+  const custom = [...seen].filter(c=>!preset.includes(c) && c!=='Personal').sort();
+  return [...preset, ...custom];
+}
+function shiftCalRef(delta){
+  if(calMode==='day') calRef.setDate(calRef.getDate()+delta);
+  if(calMode==='week') calRef.setDate(calRef.getDate()+delta*7);
+  if(calMode==='month'){ calRef.setDate(1); calRef.setMonth(calRef.getMonth()+delta); }
+}
+function calToolbarHtml(){
+  let label = '';
+  if(calMode==='day') label = fmtDateLabel(toDateStr(calRef));
+  if(calMode==='week'){
+    const mon = startOfWeek(calRef); const sun = new Date(mon); sun.setDate(mon.getDate()+6);
+    label = `${mon.getDate()} – ${sun.getDate()} ${MONTHS_SHORT[sun.getMonth()]} ${sun.getFullYear()}`;
+  }
+  if(calMode==='month') label = `${MONTHS_FULL[calRef.getMonth()]} ${calRef.getFullYear()}`;
+  const catOptions = allCategoriesForFilter().map(c=>
+    `<option value="${escapeHtml(c)}" ${calFilterCat===c?'selected':''}>${emojiFor(c)} ${escapeHtml(c)}</option>`
+  ).join('');
+  return `<div class="cal-toolbar">
+    <div class="cal-subtabs">
+      <button data-calmode="day" class="${calMode==='day'?'active':''}">Día</button>
+      <button data-calmode="week" class="${calMode==='week'?'active':''}">Semana</button>
+      <button data-calmode="month" class="${calMode==='month'?'active':''}">Mes</button>
+    </div>
+    <div class="cal-label">${label}</div>
+    <div class="cal-nav">
+      <button class="icon-btn" id="calPrev" title="Anterior">‹</button>
+      <button class="btn btn-ghost" id="calToday" style="padding:8px 14px;font-size:12.5px;">Hoy</button>
+      <button class="icon-btn" id="calNext" title="Siguiente">›</button>
+    </div>
+  </div>
+  <div class="cal-filter-row">
+    <select id="calFilterCat">
+      <option value="" ${calFilterCat===''?'selected':''}>Todas las categorías</option>
+      ${catOptions}
+      <option value="__routine__" ${calFilterCat==='__routine__'?'selected':''}>🔁 Rutina diaria</option>
+    </select>
+    ${calMode==='day' ? `<button class="btn btn-primary" id="calAddDay">+ Agregar en este día</button>` : ''}
+  </div>`;
+}
+function eventRowHtml(t, dateStr){
+  const checked = t.done ? 'checked' : '';
+  if(t.__kind==='routine'){
+    return `<div class="item-row ${t.done?'done':''}">
+      <input type="checkbox" class="chk-cal-done" data-kind="routine" data-id="${t.id}" data-date="${dateStr}" ${checked} style="margin-top:4px;">
+      <span class="chip" style="background:var(--gold);"></span>
+      <div class="item-body" data-edit="routine" data-eid="${t.id}">
+        <div class="item-title">${t.emoji?t.emoji+' ':''}${escapeHtml(t.title)}<span class="routine-tag">Rutina</span></div>
+        <div class="item-sub">${t.time||''}${t.end?' – '+t.end:''}</div>
+      </div>
+    </div>`;
+  }
+  const color = colorFor(t.category);
+  return `<div class="item-row ${t.important?'important':''} ${t.done?'done':''}">
+    <input type="checkbox" class="chk-cal-done" data-kind="task" data-id="${t.id}" ${checked} style="margin-top:4px;">
+    <span class="chip" style="background:${color};"></span>
+    <div class="item-body" data-edit="task" data-eid="${t.id}">
+      <div class="item-title">${t.important?'★ ':''}${escapeHtml(t.title)}</div>
+      <div class="item-sub">${emojiFor(t.category)} ${escapeHtml(t.category)}${t.time?' · '+t.time:''}</div>
+    </div>
+  </div>`;
+}
+function calDayBodyHtml(dateObj){
+  const dateStr = toDateStr(dateObj);
+  const events = eventsForDateFiltered(dateStr);
+  if(events.length===0){
+    return `<div class="empty-state"><span class="es-emoji">🌤️</span><strong>Sin actividades este día</strong>Agrega una tarea o revisa tu rutina diaria.</div>`;
+  }
+  const doneCount = events.filter(e=>e.done).length;
+  const pct = Math.round(doneCount/events.length*100);
+  const summary = `<div class="cal-progress">
+    <div class="cal-progress-bar"><div class="cal-progress-fill" style="width:${pct}%;"></div></div>
+    <span>${doneCount} de ${events.length} completadas${pct===100?' 🎉':''}</span>
+  </div>`;
+  return summary + `<div class="cal-day-list">${events.map(t=>eventRowHtml(t, dateStr)).join('')}</div>`;
+}
+function calWeekBodyHtml(refDate){
+  const monday = startOfWeek(refDate);
+  const todayS = todayStr();
+  let html = `<div class="cal-week-grid">`;
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const dStr = toDateStr(d);
+    const events = eventsForDateFiltered(dStr);
+    const isToday = dStr===todayS;
+    const doneCount = events.filter(e=>e.done).length;
+    html += `<div class="cal-week-col ${isToday?'today':''}" data-date="${dStr}">
+      <div class="cal-week-day-label">${DAY_ABBR3[d.getDay()]}<span class="num">${d.getDate()}</span>${events.length?`<span class="cal-week-progress">${doneCount}/${events.length}</span>`:''}</div>
+      <button type="button" class="cal-add-mini" data-date="${dStr}" title="Agregar en este día">+</button>`;
+    if(events.length===0){
+      html += `<div style="color:var(--muted);font-size:10.5px;text-align:center;padding-top:8px;">—</div>`;
+    } else {
+      events.slice(0,6).forEach(t=>{
+        const isRoutine = t.__kind==='routine';
+        html += `<div class="cal-week-event ${t.important?'important':''} ${isRoutine?'routine':''} ${t.done?'done':''}" data-kind="${t.__kind}" data-id="${t.id}">
+          ${t.done?'✓ ':''}<strong>${t.time||''}</strong> ${t.emoji?t.emoji+' ':''}${escapeHtml(t.title)}
+        </div>`;
+      });
+      if(events.length>6) html += `<div class="cal-week-event" style="opacity:.6;cursor:default;">+${events.length-6} más</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+function calMonthBodyHtml(refDate){
+  const year = refDate.getFullYear();
+  const month = refDate.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay()+6)%7;
+  const gridStart = new Date(firstOfMonth); gridStart.setDate(1-startOffset);
+  const todayS = todayStr();
+  let html = `<div class="cal-month-dow-row">`;
+  DAY_ABBR3.slice(1).concat(DAY_ABBR3[0]).forEach(d=> html += `<div class="cal-month-dow">${d}</div>`);
+  html += `</div><div class="cal-month-grid">`;
+  for(let i=0;i<42;i++){
+    const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+    const dStr = toDateStr(d);
+    const outside = d.getMonth()!==month;
+    const isToday = dStr===todayS;
+    const events = eventsForDateFiltered(dStr);
+    html += `<div class="cal-month-cell ${outside?'outside':''} ${isToday?'today':''}" data-date="${dStr}">
+      <button type="button" class="cal-add-mini cal-add-mini-month" data-date="${dStr}" title="Agregar en este día">+</button>
+      <div class="cal-month-date">${d.getDate()}</div>`;
+    if(events.length){
+      html += `<div class="cal-month-events">`;
+      events.slice(0,3).forEach(t=>{
+        const c = t.__kind==='routine' ? 'var(--gold)' : (t.important ? 'var(--pop)' : colorFor(t.category));
+        html += `<div class="cal-month-event-line ${t.done?'done':''}" style="border-left-color:${c};" data-kind="${t.__kind}" data-id="${t.id}" title="${escapeHtml(t.title)}">${t.time?t.time+' ':''}${escapeHtml(t.title)}</div>`;
+      });
+      if(events.length>3) html += `<div class="cal-month-more">+${events.length-3} más</div>`;
+      html += `</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+function renderChart(){
+  const el = document.getElementById('view-chart');
+  let body = '';
+  if(calMode==='day') body = calDayBodyHtml(calRef);
+  if(calMode==='week') body = calWeekBodyHtml(calRef);
+  if(calMode==='month') body = calMonthBodyHtml(calRef);
+  el.innerHTML = calToolbarHtml() + body;
+
+  el.querySelectorAll('[data-calmode]').forEach(b=>{
+    b.addEventListener('click', ()=>{ calMode=b.dataset.calmode; renderChart(); });
+  });
+  const prevBtn = document.getElementById('calPrev');
+  const nextBtn = document.getElementById('calNext');
+  const todayBtn = document.getElementById('calToday');
+  if(prevBtn) prevBtn.addEventListener('click', ()=>{ shiftCalRef(-1); renderChart(); });
+  if(nextBtn) nextBtn.addEventListener('click', ()=>{ shiftCalRef(1); renderChart(); });
+  if(todayBtn) todayBtn.addEventListener('click', ()=>{ calRef=new Date(); renderChart(); });
+
+  const filterSel = document.getElementById('calFilterCat');
+  if(filterSel) filterSel.addEventListener('change', ()=>{ calFilterCat = filterSel.value; renderChart(); });
+  const addDayBtn = document.getElementById('calAddDay');
+  if(addDayBtn) addDayBtn.addEventListener('click', ()=> openNewForDate(toDateStr(calRef)));
+  el.querySelectorAll('.cal-add-mini').forEach(b=>{
+    b.addEventListener('click', (e)=>{ e.stopPropagation(); openNewForDate(b.dataset.date); });
+  });
+
+  el.querySelectorAll('.item-body[data-edit="task"]').forEach(node=>{
+    node.style.cursor = 'pointer';
+    node.addEventListener('click', ()=> openEdit(node.dataset.eid));
+  });
+  el.querySelectorAll('.item-body[data-edit="routine"]').forEach(node=>{
+    node.style.cursor = 'pointer';
+    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.eid));
+  });
+  el.querySelectorAll('.cal-week-event[data-kind="task"]').forEach(node=>{
+    node.addEventListener('click', ()=> openEdit(node.dataset.id));
+  });
+  el.querySelectorAll('.cal-week-event[data-kind="routine"]').forEach(node=>{
+    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.id));
+  });
+  el.querySelectorAll('.chk-cal-done').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.dataset.kind==='task'){
+        const t = tasks.find(x=>x.id===cb.dataset.id);
+        if(t){ t.done = cb.checked; saveTasks(); }
+      } else {
+        setRoutineDone(cb.dataset.id, cb.dataset.date, cb.checked);
+      }
+      renderChart();
+    });
+  });
+  el.querySelectorAll('.cal-week-day-label').forEach(lbl=>{
+    lbl.addEventListener('click', ()=>{
+      const col = lbl.closest('.cal-week-col');
+      calRef = new Date(col.dataset.date+'T00:00:00');
+      calMode = 'day';
+      renderChart();
+    });
+  });
+  el.querySelectorAll('.cal-month-cell').forEach(cell=>{
+    cell.addEventListener('click', ()=>{
+      calRef = new Date(cell.dataset.date+'T00:00:00');
+      calMode = 'day';
+      renderChart();
+    });
+  });
+  el.querySelectorAll('.cal-month-event-line').forEach(line=>{
+    line.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(line.dataset.kind==='routine') openRoutineEdit(line.dataset.id);
+      else openEdit(line.dataset.id);
+    });
+  });
+}
+
+function renderAgenda(){
+  const el = document.getElementById('view-agenda');
+  const cats = [...new Set(tasks.map(t=>t.category))].sort();
+  let controls = `<div class="agenda-controls">
+    <select id="filterCategory">
+      <option value="">Todas las categorías</option>
+      ${cats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+    </select>
+    <select id="filterStatus">
+      <option value="">Todas</option>
+      <option value="pending">Pendientes</option>
+      <option value="done">Completadas</option>
+    </select>
+  </div>`;
+
+  const filterCat = document.getElementById('filterCategory')?.value || '';
+  const filterStatus = document.getElementById('filterStatus')?.value || '';
+
+  let list = tasks.slice().sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  if(filterCat) list = list.filter(t=>t.category===filterCat);
+  if(filterStatus==='pending') list = list.filter(t=>!t.done);
+  if(filterStatus==='done') list = list.filter(t=>t.done);
+
+  const groups = {};
+  list.forEach(t=>{
+    if(!groups[t.date]) groups[t.date]=[];
+    groups[t.date].push(t);
+  });
+  // Siempre mostrar el día de hoy, aunque no tenga tareas con fecha, para ver la rutina diaria
+  const showRoutines = !filterCat && filterStatus!=='done';
+  if(showRoutines && !groups[todayStr()]) groups[todayStr()] = [];
+
+  if(showRoutines && routines.length){
+    Object.keys(groups).forEach(date=>{
+      const weekday = new Date(date+'T00:00:00').getDay();
+      const matches = routines.filter(r=>r.days.includes(weekday));
+      matches.forEach(r=> groups[date].push({...r, __routine:true, time:r.start}));
+    });
+  }
+
+  if(Object.keys(groups).length===0 || Object.values(groups).every(arr=>arr.length===0)){
+    el.innerHTML = controls + `<div class="empty-state"><span class="es-emoji">🔍</span><strong>No hay tareas para mostrar</strong>Prueba otro filtro o agrega una nueva tarea.</div>`;
+    attachAgendaControls();
+    return;
+  }
+
+  let html = controls;
+  Object.keys(groups).sort().forEach(date=>{
+    const dayItems = groups[date].slice().sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+    if(dayItems.length===0) return;
+    html += `<div class="day-group"><p class="day-label">${fmtDateLabel(date)}</p>`;
+    dayItems.forEach(t=>{
+      if(t.__routine){
+        const rDone = isRoutineDone(t.id, date);
+        html += `<div class="item-row ${rDone?'done':''}" data-rid="${t.id}">
+          <input type="checkbox" class="chk-routine-done" data-id="${t.id}" data-date="${date}" ${rDone?'checked':''} style="margin-top:4px;">
+          <span class="chip" style="background:var(--gold);"></span>
+          <div class="item-body">
+            <div class="item-title">${t.emoji?t.emoji+' ':''}${escapeHtml(t.title)}<span class="routine-tag">Rutina</span></div>
+            <div class="item-sub">${t.time||''}${t.end?' – '+t.end:''}</div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn btn-redit" data-id="${t.id}" title="Editar rutina">✎</button>
+          </div>
+        </div>`;
+        return;
+      }
+      const color = colorFor(t.category);
+      html += `<div class="item-row ${t.important?'important':''} ${t.done?'done':''}" data-id="${t.id}">
+        <input type="checkbox" class="chk-done" data-id="${t.id}" ${t.done?'checked':''} style="margin-top:4px;">
+        <span class="chip" style="background:${color};"></span>
+        <div class="item-body">
+          <div class="item-title">${t.important?'★ ':''}${escapeHtml(t.title)}</div>
+          <div class="item-sub">${emojiFor(t.category)} ${escapeHtml(t.category)}${t.time?' · '+t.time:''}</div>
+          ${t.notes?`<div class="item-notes">${escapeHtml(t.notes)}</div>`:''}
+        </div>
+        <div class="item-actions">
+          <button class="icon-btn btn-edit" data-id="${t.id}" title="Editar">✎</button>
+          <button class="icon-btn btn-del" data-id="${t.id}" title="Eliminar">✕</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+
+  el.innerHTML = html;
+  attachAgendaControls();
+
+  el.querySelectorAll('.btn-redit').forEach(b=>{
+    b.addEventListener('click', ()=> openRoutineEdit(b.dataset.id));
+  });
+  el.querySelectorAll('.chk-routine-done').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      setRoutineDone(cb.dataset.id, cb.dataset.date, cb.checked);
+      renderAgenda();
+    });
+  });
+  el.querySelectorAll('.chk-done').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const t = tasks.find(x=>x.id===cb.dataset.id);
+      t.done = cb.checked;
+      saveTasks(); render();
+    });
+  });
+  el.querySelectorAll('.btn-edit').forEach(b=>{
+    b.addEventListener('click', ()=> openEdit(b.dataset.id));
+  });
+  el.querySelectorAll('.btn-del').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(confirm('¿Eliminar esta tarea?')){
+        tasks = tasks.filter(x=>x.id!==b.dataset.id);
+        saveTasks(); render();
+      }
+    });
+  });
+}
+
+function attachAgendaControls(){
+  const fc = document.getElementById('filterCategory');
+  const fs = document.getElementById('filterStatus');
+  if(fc) fc.addEventListener('change', renderAgenda);
+  if(fs) fs.addEventListener('change', renderAgenda);
+}
+
+function renderRoutine(){
+  const el = document.getElementById('view-routine');
+  let html = `<div class="routine-toolbar"><button class="btn btn-primary" id="btnNewRoutine">+ Nueva actividad diaria</button></div>`;
+  if(routines.length===0){
+    html += `<div class="empty-state"><span class="es-emoji">🔁</span><strong>Aún no tienes una rutina diaria</strong>Agrega actividades como levantarte, ejercicio, oración o iglesia y aquí se repetirán solas cada día.</div>`;
+    el.innerHTML = html;
+    document.getElementById('btnNewRoutine').addEventListener('click', openRoutineNew);
+    return;
+  }
+  const sorted = routines.slice().sort((a,b)=> (a.start||'').localeCompare(b.start||''));
+  sorted.forEach(r=>{
+    html += `<div class="routine-card" data-id="${r.id}">
+      <div class="routine-time-box">${r.start}${r.end?'<br>'+r.end:''}</div>
+      <div class="item-body">
+        <div class="item-title">${r.emoji?r.emoji+' ':''}${escapeHtml(r.title)}</div>
+        <span class="routine-days-badge">${routineDaysLabel(r.days)}</span>
+      </div>
+      <div class="item-actions">
+        <button class="icon-btn btn-redit" data-id="${r.id}" title="Editar">✎</button>
+        <button class="icon-btn btn-rdel" data-id="${r.id}" title="Eliminar">✕</button>
+      </div>
+    </div>`;
+  });
+  el.innerHTML = html;
+  document.getElementById('btnNewRoutine').addEventListener('click', openRoutineNew);
+  el.querySelectorAll('.btn-redit').forEach(b=> b.addEventListener('click', ()=> openRoutineEdit(b.dataset.id)));
+  el.querySelectorAll('.btn-rdel').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      if(confirm('¿Eliminar esta actividad de tu rutina diaria?')){
+        routines = routines.filter(x=>x.id!==b.dataset.id);
+        saveRoutines(); render();
+      }
+    });
+  });
+}
+
+function renderImportant(){
+  const el = document.getElementById('view-important');
+  const list = tasks.filter(t=>t.important).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+  if(list.length===0){
+    el.innerHTML = `<div class="empty-state"><span class="es-emoji">⭐</span><strong>Sin fechas importantes aún</strong>Marca una tarea como "fecha importante" al crearla para verla aquí.</div>`;
+    return;
+  }
+  let html = `<div class="imp-list">`;
+  list.forEach(t=>{
+    const s = fmtShort(t.date);
+    html += `<div class="imp-card" data-id="${t.id}">
+      <div class="imp-date-box"><div class="d">${s.d}</div><div class="m">${s.m}</div></div>
+      <div class="item-body">
+        <div class="item-title">${escapeHtml(t.title)}</div>
+        <div class="item-sub">${emojiFor(t.category)} ${escapeHtml(t.category)}${t.time?' · '+t.time:''}</div>
+        <div class="imp-countdown">${daysUntil(t.date)}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+  el.querySelectorAll('.imp-card').forEach(c=> c.addEventListener('click', ()=> openEdit(c.dataset.id)));
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ===== Modal handling =====
+const overlay = document.getElementById('overlay');
+const catSelect = document.getElementById('fCategory');
+catSelect.addEventListener('change', ()=>{
+  document.getElementById('fCustomWrap').style.display = catSelect.value==='__custom__' ? 'flex':'none';
+});
+
+function setTaskMode(mode){
+  taskMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b=> b.classList.toggle('active', b.dataset.mode===mode));
+  document.getElementById('onceFields').style.display = mode==='once' ? 'block':'none';
+  document.getElementById('recurringFields').style.display = mode==='recurring' ? 'block':'none';
+  document.getElementById('importantFieldWrap').style.display = mode==='once' ? 'flex':'none';
+}
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> setTaskMode(btn.dataset.mode));
+});
+
+document.querySelectorAll('.day-chip-task').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const d = Number(chip.dataset.day);
+    if(taskSelectedDays.includes(d)) taskSelectedDays = taskSelectedDays.filter(x=>x!==d);
+    else taskSelectedDays.push(d);
+    refreshTaskDayChips();
+  });
+});
+document.querySelectorAll('.preset-btn-task').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const p = btn.dataset.preset;
+    if(p==='weekdays') taskSelectedDays=[1,2,3,4,5];
+    if(p==='weekend') taskSelectedDays=[0,6];
+    if(p==='all') taskSelectedDays=[0,1,2,3,4,5,6];
+    refreshTaskDayChips();
+  });
+});
+function refreshTaskDayChips(){
+  document.querySelectorAll('.day-chip-task').forEach(chip=>{
+    chip.classList.toggle('selected', taskSelectedDays.includes(Number(chip.dataset.day)));
+  });
+}
+
+function openNew(){
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Nueva tarea';
+  document.getElementById('fTitle').value='';
+  document.getElementById('fCategory').value='Universidad';
+  document.getElementById('fCustomWrap').style.display='none';
+  document.getElementById('fCustomCategory').value='';
+  document.getElementById('fDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('fTime').value='';
+  document.getElementById('fStart').value='';
+  document.getElementById('fEnd').value='';
+  document.getElementById('fNotes').value='';
+  document.getElementById('fImportant').checked=false;
+  document.getElementById('modeToggleWrap').style.display='block';
+  taskSelectedDays = [1,2,3,4,5];
+  refreshTaskDayChips();
+  setTaskMode('once');
+  overlay.classList.add('open');
+}
+
+function openNewForDate(dateStr){
+  openNew();
+  document.getElementById('fDate').value = dateStr;
+  if(calFilterCat && calFilterCat!=='__routine__'){
+    const knownCats = Object.keys(PRESET_COLORS);
+    if(knownCats.includes(calFilterCat)){
+      document.getElementById('fCategory').value = calFilterCat;
+      document.getElementById('fCustomWrap').style.display='none';
+    } else {
+      document.getElementById('fCategory').value = '__custom__';
+      document.getElementById('fCustomWrap').style.display='flex';
+      document.getElementById('fCustomCategory').value = calFilterCat;
+    }
+  }
+}
+
+function openEdit(id){
+  const t = tasks.find(x=>x.id===id);
+  if(!t) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Editar tarea';
+  document.getElementById('fTitle').value=t.title;
+  const knownCats = Object.keys(PRESET_COLORS);
+  if(knownCats.includes(t.category)){
+    document.getElementById('fCategory').value=t.category;
+    document.getElementById('fCustomWrap').style.display='none';
+  } else {
+    document.getElementById('fCategory').value='__custom__';
+    document.getElementById('fCustomWrap').style.display='flex';
+    document.getElementById('fCustomCategory').value=t.category;
+  }
+  document.getElementById('fDate').value=t.date;
+  document.getElementById('fTime').value=t.time||'';
+  document.getElementById('fNotes').value=t.notes||'';
+  document.getElementById('fImportant').checked=!!t.important;
+  document.getElementById('modeToggleWrap').style.display='none';
+  setTaskMode('once');
+  overlay.classList.add('open');
+}
+
+document.getElementById('btnNew').addEventListener('click', openNew);
+document.getElementById('btnCancel').addEventListener('click', ()=> overlay.classList.remove('open'));
+overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.remove('open'); });
+
+document.getElementById('btnSave').addEventListener('click', ()=>{
+  const title = document.getElementById('fTitle').value.trim();
+  if(!title){ alert('Por favor escribe un título.'); return; }
+  let category = document.getElementById('fCategory').value;
+  if(category==='__custom__'){
+    category = document.getElementById('fCustomCategory').value.trim();
+    if(!category){ alert('Escribe el nombre de la categoría.'); return; }
+  }
+  const notes = document.getElementById('fNotes').value.trim();
+
+  if(editingId){
+    const date = document.getElementById('fDate').value;
+    if(!date){ alert('Por favor completa la fecha.'); return; }
+    const time = document.getElementById('fTime').value;
+    const important = document.getElementById('fImportant').checked;
+    const t = tasks.find(x=>x.id===editingId);
+    Object.assign(t, {title, category, date, time, notes, important});
+    saveTasks();
+    overlay.classList.remove('open');
+    render();
+    return;
+  }
+
+  if(taskMode==='once'){
+    const date = document.getElementById('fDate').value;
+    if(!date){ alert('Por favor completa la fecha.'); return; }
+    const time = document.getElementById('fTime').value;
+    const important = document.getElementById('fImportant').checked;
+    tasks.push({id:uid(), title, category, date, time, notes, important, done:false});
+    saveTasks();
+  } else {
+    const start = document.getElementById('fStart').value;
+    if(!start){ alert('Por favor indica la hora de inicio.'); return; }
+    if(taskSelectedDays.length===0){ alert('Selecciona al menos un día.'); return; }
+    const end = document.getElementById('fEnd').value;
+    routines.push({id:uid(), title, emoji:emojiFor(category), start, end, days:taskSelectedDays.slice(), category, notes});
+    saveRoutines();
+  }
+  overlay.classList.remove('open');
+  render();
+});
+
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.addEventListener('click', ()=> switchView(b.dataset.view));
+});
+
+// ===== Routine modal handling =====
+const overlayRoutine = document.getElementById('overlayRoutine');
+let selectedDays = [];
+
+document.querySelectorAll('.day-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const d = Number(chip.dataset.day);
+    if(selectedDays.includes(d)) selectedDays = selectedDays.filter(x=>x!==d);
+    else selectedDays.push(d);
+    refreshDayChips();
+  });
+});
+document.querySelectorAll('.preset-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const p = btn.dataset.preset;
+    if(p==='weekdays') selectedDays = [1,2,3,4,5];
+    if(p==='weekend') selectedDays = [0,6];
+    if(p==='all') selectedDays = [0,1,2,3,4,5,6];
+    refreshDayChips();
+  });
+});
+function refreshDayChips(){
+  document.querySelectorAll('.day-chip').forEach(chip=>{
+    chip.classList.toggle('selected', selectedDays.includes(Number(chip.dataset.day)));
+  });
+}
+
+function openRoutineNew(){
+  editingRoutineId = null;
+  selectedDays = [1,2,3,4,5];
+  document.getElementById('routineModalTitle').textContent = 'Nueva actividad diaria';
+  document.getElementById('rEmoji').value='';
+  document.getElementById('rTitle').value='';
+  document.getElementById('rStart').value='';
+  document.getElementById('rEnd').value='';
+  refreshDayChips();
+  overlayRoutine.classList.add('open');
+}
+
+function openRoutineEdit(id){
+  const r = routines.find(x=>x.id===id);
+  if(!r) return;
+  editingRoutineId = id;
+  selectedDays = r.days.slice();
+  document.getElementById('routineModalTitle').textContent = 'Editar actividad diaria';
+  document.getElementById('rEmoji').value=r.emoji||'';
+  document.getElementById('rTitle').value=r.title;
+  document.getElementById('rStart').value=r.start;
+  document.getElementById('rEnd').value=r.end||'';
+  refreshDayChips();
+  overlayRoutine.classList.add('open');
+}
+
+document.getElementById('btnRoutineCancel').addEventListener('click', ()=> overlayRoutine.classList.remove('open'));
+overlayRoutine.addEventListener('click', (e)=>{ if(e.target===overlayRoutine) overlayRoutine.classList.remove('open'); });
+
+document.getElementById('btnRoutineSave').addEventListener('click', ()=>{
+  const title = document.getElementById('rTitle').value.trim();
+  const start = document.getElementById('rStart').value;
+  const end = document.getElementById('rEnd').value;
+  const emoji = document.getElementById('rEmoji').value.trim();
+  if(!title || !start){ alert('Por favor completa la actividad y la hora de inicio.'); return; }
+  if(selectedDays.length===0){ alert('Selecciona al menos un día.'); return; }
+
+  if(editingRoutineId){
+    const r = routines.find(x=>x.id===editingRoutineId);
+    Object.assign(r, {title, start, end, emoji, days:selectedDays.slice()});
+    if(!r.category) r.category = 'Personal';
+  } else {
+    routines.push({id:uid(), title, start, end, emoji, days:selectedDays.slice(), category:'Personal'});
+  }
+  saveRoutines();
+  overlayRoutine.classList.remove('open');
+  render();
+});
+
+loadTasks();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(e=> console.error('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
