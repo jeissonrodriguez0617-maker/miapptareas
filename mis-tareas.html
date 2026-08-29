@@ -199,7 +199,7 @@
   /* ===== Modal ===== */
   .overlay{
     position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;
-    align-items:center;justify-content:center;padding:20px;z-index:50;
+    align-items:center;justify-content:center;padding:20px;z-index:100;
   }
   .overlay.open{display:flex;}
   .modal{
@@ -350,12 +350,49 @@
   .cal-month-event-line.done{opacity:.5;text-decoration:line-through;}
   .cal-month-more{font-size:9px;color:var(--muted);margin-top:1px;font-weight:700;padding-left:5px;}
 
+  /* ===== Mobile app shell (bottom nav + FAB) ===== */
+  .fab{
+    display:none;align-items:center;justify-content:center;
+    position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));
+    width:56px;height:56px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),#0FA396);
+    color:#fff;font-size:28px;font-weight:600;border:none;line-height:1;
+    box-shadow:0 8px 20px rgba(23,195,178,.4);z-index:70;cursor:pointer;
+    font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .fab:active{transform:scale(.92);}
+  .bottom-nav{
+    display:none;position:fixed;left:0;right:0;bottom:0;
+    background:var(--surface);border-top:1px solid var(--line);
+    padding:7px 4px calc(7px + env(safe-area-inset-bottom));
+    z-index:70;box-shadow:0 -4px 18px rgba(31,59,58,.07);
+  }
+  .bn-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+    background:transparent;border:none;color:var(--muted);font-family:var(--font-body);
+    font-size:9.5px;font-weight:700;padding:5px 2px;cursor:pointer;border-radius:12px;
+    transition:color .15s ease, transform .15s cubic-bezier(.34,1.56,.64,1);
+  }
+  .bn-btn .bn-icon{font-size:19px;line-height:1;transition:transform .15s cubic-bezier(.34,1.56,.64,1);}
+  .bn-btn.active{color:var(--gold);}
+  .bn-btn.active .bn-icon{transform:scale(1.15) translateY(-1px);}
+
   @media (max-width:700px){
     .cal-label{order:-1;width:100%;text-align:left;}
     .cal-week-grid{grid-auto-flow:column;grid-auto-columns:118px;grid-template-columns:none;overflow-x:auto;padding-bottom:6px;}
     .cal-month-cell{min-height:78px;padding:5px;}
     .cal-month-date{font-size:11px;}
     .cal-month-event-line{font-size:8.5px;padding:1.5px 4px;}
+
+    body{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
+    .wrap{max-width:100%;}
+    nav.tabs{display:none;}
+    header.top #btnNew{display:none;}
+    header.top{align-items:center;margin-bottom:16px;}
+    .brand-title{font-size:21px;}
+    .brand-eyebrow{display:none;}
+    .fab{display:flex;}
+    .bottom-nav{display:flex;}
   }
 </style>
 </head>
@@ -385,6 +422,14 @@
   <section id="view-important" style="display:none;"></section>
 
 </div>
+
+<button class="fab" id="fabNew" title="Nueva tarea">+</button>
+<nav class="bottom-nav">
+  <button data-view="chart" class="bn-btn active"><span class="bn-icon">📅</span><span class="bn-label">Calendario</span></button>
+  <button data-view="agenda" class="bn-btn"><span class="bn-icon">📋</span><span class="bn-label">Agenda</span></button>
+  <button data-view="routine" class="bn-btn"><span class="bn-icon">🔁</span><span class="bn-label">Rutina</span></button>
+  <button data-view="important" class="bn-btn"><span class="bn-icon">⭐</span><span class="bn-label">Importantes</span></button>
+</nav>
 
 <div class="overlay" id="overlay">
   <div class="modal">
@@ -709,7 +754,7 @@ function routineDaysLabel(days){
 
 function switchView(view){
   currentView = view;
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.querySelectorAll('nav.tabs button, .bn-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
   document.getElementById('view-chart').style.display = view==='chart' ? 'block':'none';
   document.getElementById('view-agenda').style.display = view==='agenda' ? 'block':'none';
   document.getElementById('view-routine').style.display = view==='routine' ? 'block':'none';
@@ -1312,9 +1357,10 @@ document.getElementById('btnSave').addEventListener('click', ()=>{
   render();
 });
 
-document.querySelectorAll('nav.tabs button').forEach(b=>{
+document.querySelectorAll('nav.tabs button, .bn-btn').forEach(b=>{
   b.addEventListener('click', ()=> switchView(b.dataset.view));
 });
+document.getElementById('fabNew').addEventListener('click', openNew);
 
 // ===== Routine modal handling =====
 const overlayRoutine = document.getElementById('overlayRoutine');
