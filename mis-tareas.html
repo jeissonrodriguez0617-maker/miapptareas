@@ -217,6 +217,21 @@
   .check-field input{width:auto;}
   .check-field label{font-size:13px;color:var(--ink);font-weight:500;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;}
+  .delete-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px dashed var(--line);position:relative;}
+  .btn-soft{
+    background:transparent;border:1.5px solid var(--gold);color:var(--gold);
+    border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;
+    font-family:var(--font-body);transition:background .15s ease, color .15s ease, transform .15s ease;
+  }
+  .btn-soft:hover{background:var(--gold);color:#fff;}
+  .btn-soft:active{transform:scale(.96);}
+  .btn-danger-soft{
+    background:transparent;border:1.5px solid var(--danger);color:var(--danger);
+    border-radius:999px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;
+    font-family:var(--font-body);transition:background .15s ease, color .15s ease, transform .15s ease;
+  }
+  .btn-danger-soft:hover{background:var(--danger);color:#fff;}
+  .btn-danger-soft:active{transform:scale(.96);}
   .mode-toggle{display:flex;gap:6px;background:var(--surface-2);border-radius:999px;padding:4px;}
   .mode-btn{
     flex:1;background:transparent;border:none;padding:10px 10px;border-radius:999px;
@@ -228,20 +243,20 @@
 
   /* ===== Routine (rutina diaria) ===== */
   .preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;}
-  .preset-btn, .preset-btn-task{
+  .preset-btn, .preset-btn-task, .preset-btn-dup{
     font-size:11.5px;padding:6px 11px;border-radius:999px;border:1.5px solid var(--line);
     background:var(--surface-2);color:var(--muted);cursor:pointer;font-weight:700;
     font-family:var(--font-body);transition:border-color .15s ease, color .15s ease;
   }
-  .preset-btn:hover, .preset-btn-task:hover{border-color:var(--gold);color:var(--gold);}
+  .preset-btn:hover, .preset-btn-task:hover, .preset-btn-dup:hover{border-color:var(--gold);color:var(--gold);}
   .day-picker{display:flex;gap:6px;flex-wrap:wrap;}
-  .day-chip, .day-chip-task{
+  .day-chip, .day-chip-task, .day-chip-dup{
     width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);
     background:var(--surface-2);color:var(--muted);font-size:12.5px;font-weight:800;
     cursor:pointer;display:flex;align-items:center;justify-content:center;
     font-family:var(--font-body);transition:transform .15s cubic-bezier(.34,1.56,.64,1), background .15s ease, color .15s ease, border-color .15s ease;
   }
-  .day-chip.selected, .day-chip-task.selected{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.08);}
+  .day-chip.selected, .day-chip-task.selected, .day-chip-dup.selected{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.08);}
   .routine-toolbar{display:flex;justify-content:flex-end;margin-bottom:16px;}
   .routine-card{
     display:flex;align-items:center;gap:14px;background:var(--surface);
@@ -287,7 +302,7 @@
   .cal-subtabs button.active{background:var(--gold);color:var(--gold-ink);}
   .cal-subtabs button:not(.active):hover{color:var(--gold);}
   .cal-label{font-family:var(--font-display);font-weight:800;font-size:15px;text-align:center;flex:1;}
-  .cal-nav{display:flex;align-items:center;gap:8px;}
+  .cal-nav{display:flex;align-items:center;gap:8px;position:relative;}
   .cal-filter-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
   .cal-filter-row select{min-width:170px;}
   .cal-add-mini{
@@ -310,7 +325,7 @@
   .cal-week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
   .cal-week-col{
     background:var(--surface);border:1.5px solid var(--line);border-radius:14px;
-    padding:10px;min-height:140px;
+    padding:10px;min-height:140px;min-width:0;overflow:hidden;
   }
   .cal-week-col.today{border-color:var(--gold);box-shadow:0 0 0 2px rgba(23,195,178,.15);}
   .cal-week-day-label{
@@ -324,17 +339,18 @@
   .cal-week-event{
     font-size:10.5px;background:var(--surface-2);border-radius:8px;padding:5px 7px;
     margin-bottom:5px;cursor:pointer;line-height:1.35;transition:transform .12s ease;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .cal-week-event:hover{transform:translateX(2px);}
   .cal-week-event.important{box-shadow:inset 3px 0 0 var(--pop);}
   .cal-week-event.routine{opacity:.85;}
 
-  .cal-month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;}
+  .cal-month-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
   .cal-month-dow{text-align:center;font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.04em;}
   .cal-month-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .cal-month-cell{
     background:var(--surface);border:1.5px solid var(--line);border-radius:12px;
-    padding:7px;min-height:96px;cursor:pointer;transition:border-color .12s ease, box-shadow .12s ease;
+    padding:7px;min-height:96px;min-width:0;overflow:hidden;cursor:pointer;transition:border-color .12s ease, box-shadow .12s ease;
   }
   .cal-month-cell:hover{border-color:var(--gold);box-shadow:0 3px 10px rgba(31,59,58,.06);}
   .cal-month-cell.outside{opacity:.35;}
@@ -504,6 +520,16 @@
           <button type="button" class="day-chip-task" data-day="0">D</button>
         </div>
       </div>
+      <div class="row2">
+        <div class="field">
+          <label>Fecha de inicio (opcional)</label>
+          <input type="date" id="fStartDate">
+        </div>
+        <div class="field">
+          <label>Fecha de finalización (opcional)</label>
+          <input type="date" id="fEndDate">
+        </div>
+      </div>
     </div>
 
     <div class="field">
@@ -513,6 +539,11 @@
     <div class="check-field" id="importantFieldWrap">
       <input type="checkbox" id="fImportant">
       <label for="fImportant">Marcar como fecha importante</label>
+    </div>
+    <div class="delete-row" id="taskDeleteRow" style="display:none;">
+      <button type="button" class="btn btn-soft" id="btnDuplicateTask">📋 Duplicar a otra fecha</button>
+      <button type="button" class="btn btn-danger-soft" id="btnDeleteTask">🗑️ Eliminar tarea</button>
+      <input type="date" id="duplicateDateInput" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;">
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancel">Cancelar</button>
@@ -559,9 +590,41 @@
         <button type="button" class="day-chip" data-day="0">D</button>
       </div>
     </div>
+    <div class="delete-row" id="routineDeleteRow" style="display:none;">
+      <button type="button" class="btn btn-soft" id="btnDuplicateRoutine">📋 Duplicar</button>
+      <button type="button" class="btn btn-danger-soft" id="btnDeleteThisDate">🗑️ Eliminar solo esta fecha</button>
+      <button type="button" class="btn btn-danger-soft" id="btnDeleteAllDates">🗑️ Eliminar todas las fechas</button>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnRoutineCancel">Cancelar</button>
       <button class="btn btn-primary" id="btnRoutineSave">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlayDuplicateRoutine">
+  <div class="modal">
+    <h3>Duplicar actividad</h3>
+    <div class="field">
+      <label>¿Qué días quieres que tenga la copia de "<span id="dupRoutineTitle"></span>"?</label>
+      <div class="preset-row">
+        <button type="button" class="preset-btn-dup" data-preset="weekdays">Entre semana (L-V)</button>
+        <button type="button" class="preset-btn-dup" data-preset="weekend">Fin de semana</button>
+        <button type="button" class="preset-btn-dup" data-preset="all">Todos los días</button>
+      </div>
+      <div class="day-picker" id="dupDayPicker">
+        <button type="button" class="day-chip-dup" data-day="1">L</button>
+        <button type="button" class="day-chip-dup" data-day="2">M</button>
+        <button type="button" class="day-chip-dup" data-day="3">X</button>
+        <button type="button" class="day-chip-dup" data-day="4">J</button>
+        <button type="button" class="day-chip-dup" data-day="5">V</button>
+        <button type="button" class="day-chip-dup" data-day="6">S</button>
+        <button type="button" class="day-chip-dup" data-day="0">D</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnDupCancel">Cancelar</button>
+      <button class="btn btn-primary" id="btnDupConfirm">Duplicar</button>
     </div>
   </div>
 </div>
@@ -639,6 +702,7 @@ let routines = [];
 let routineDone = {};
 let editingId = null;
 let editingRoutineId = null;
+let routineEditContextDate = null;
 let taskMode = 'once';
 let taskSelectedDays = [];
 let currentView = 'chart';
@@ -785,17 +849,23 @@ function startOfWeek(date){
   d.setHours(0,0,0,0);
   return d;
 }
+function routineMatchesDate(r, dateStr){
+  const weekday = new Date(dateStr+'T00:00:00').getDay();
+  if(!r.days.includes(weekday)) return false;
+  if(r.startDate && dateStr < r.startDate) return false;
+  if(r.endDate && dateStr > r.endDate) return false;
+  if(r.exceptions && r.exceptions.includes(dateStr)) return false;
+  return true;
+}
 function eventsForDate(dateStr){
   const dayTasks = tasks.filter(t=>t.date===dateStr).map(t=>({...t, __kind:'task'}));
-  const weekday = new Date(dateStr+'T00:00:00').getDay();
   const dayRoutines = routines
-    .filter(r=>r.days.includes(weekday) && r.category && r.category!=='Personal')
+    .filter(r=>routineMatchesDate(r,dateStr) && r.category && r.category!=='Personal')
     .map(r=>({...r, __kind:'routine', time:r.start, done:isRoutineDone(r.id,dateStr)}));
   return [...dayTasks, ...dayRoutines].sort((a,b)=> (a.time||'').localeCompare(b.time||''));
 }
 function routinesForDate(dateStr){
-  const weekday = new Date(dateStr+'T00:00:00').getDay();
-  return routines.filter(r=>r.days.includes(weekday)).map(r=>({...r, __kind:'routine', time:r.start, done:isRoutineDone(r.id,dateStr)})).sort((a,b)=> (a.time||'').localeCompare(b.time||''));
+  return routines.filter(r=>routineMatchesDate(r,dateStr)).map(r=>({...r, __kind:'routine', time:r.start, done:isRoutineDone(r.id,dateStr)})).sort((a,b)=> (a.time||'').localeCompare(b.time||''));
 }
 function eventsForDateFiltered(dateStr){
   if(calFilterCat==='__routine__') return routinesForDate(dateStr);
@@ -836,6 +906,8 @@ function calToolbarHtml(){
       <button class="icon-btn" id="calPrev" title="Anterior">‹</button>
       <button class="btn btn-ghost" id="calToday" style="padding:8px 14px;font-size:12.5px;">Hoy</button>
       <button class="icon-btn" id="calNext" title="Siguiente">›</button>
+      <button class="icon-btn" id="calJumpBtn" title="Ir a una fecha">📅</button>
+      <input type="date" id="calJumpInput" value="${toDateStr(calRef)}" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;">
     </div>
   </div>
   <div class="cal-filter-row">
@@ -853,7 +925,7 @@ function eventRowHtml(t, dateStr){
     return `<div class="item-row ${t.done?'done':''}">
       <input type="checkbox" class="chk-cal-done" data-kind="routine" data-id="${t.id}" data-date="${dateStr}" ${checked} style="margin-top:4px;">
       <span class="chip" style="background:var(--gold);"></span>
-      <div class="item-body" data-edit="routine" data-eid="${t.id}">
+      <div class="item-body" data-edit="routine" data-eid="${t.id}" data-date="${dateStr}">
         <div class="item-title">${t.emoji?t.emoji+' ':''}${escapeHtml(t.title)}<span class="routine-tag">Rutina</span></div>
         <div class="item-sub">${t.time||''}${t.end?' – '+t.end:''}</div>
       </div>
@@ -901,7 +973,7 @@ function calWeekBodyHtml(refDate){
     } else {
       events.slice(0,6).forEach(t=>{
         const isRoutine = t.__kind==='routine';
-        html += `<div class="cal-week-event ${t.important?'important':''} ${isRoutine?'routine':''} ${t.done?'done':''}" data-kind="${t.__kind}" data-id="${t.id}">
+        html += `<div class="cal-week-event ${t.important?'important':''} ${isRoutine?'routine':''} ${t.done?'done':''}" data-kind="${t.__kind}" data-id="${t.id}" data-date="${dStr}">
           ${t.done?'✓ ':''}<strong>${t.time||''}</strong> ${t.emoji?t.emoji+' ':''}${escapeHtml(t.title)}
         </div>`;
       });
@@ -935,7 +1007,7 @@ function calMonthBodyHtml(refDate){
       html += `<div class="cal-month-events">`;
       events.slice(0,3).forEach(t=>{
         const c = t.__kind==='routine' ? 'var(--gold)' : (t.important ? 'var(--pop)' : colorFor(t.category));
-        html += `<div class="cal-month-event-line ${t.done?'done':''}" style="border-left-color:${c};" data-kind="${t.__kind}" data-id="${t.id}" title="${escapeHtml(t.title)}">${t.time?t.time+' ':''}${escapeHtml(t.title)}</div>`;
+        html += `<div class="cal-month-event-line ${t.done?'done':''}" style="border-left-color:${c};" data-kind="${t.__kind}" data-id="${t.id}" data-date="${dStr}" title="${escapeHtml(t.title)}">${t.time?t.time+' ':''}${escapeHtml(t.title)}</div>`;
       });
       if(events.length>3) html += `<div class="cal-month-more">+${events.length-3} más</div>`;
       html += `</div>`;
@@ -963,6 +1035,21 @@ function renderChart(){
   if(nextBtn) nextBtn.addEventListener('click', ()=>{ shiftCalRef(1); renderChart(); });
   if(todayBtn) todayBtn.addEventListener('click', ()=>{ calRef=new Date(); renderChart(); });
 
+  const jumpBtn = document.getElementById('calJumpBtn');
+  const jumpInput = document.getElementById('calJumpInput');
+  if(jumpBtn && jumpInput){
+    jumpBtn.addEventListener('click', ()=>{
+      if(jumpInput.showPicker) jumpInput.showPicker();
+      else jumpInput.click();
+    });
+    jumpInput.addEventListener('change', ()=>{
+      if(jumpInput.value){
+        calRef = new Date(jumpInput.value+'T00:00:00');
+        renderChart();
+      }
+    });
+  }
+
   const filterSel = document.getElementById('calFilterCat');
   if(filterSel) filterSel.addEventListener('change', ()=>{ calFilterCat = filterSel.value; renderChart(); });
   const addDayBtn = document.getElementById('calAddDay');
@@ -977,13 +1064,13 @@ function renderChart(){
   });
   el.querySelectorAll('.item-body[data-edit="routine"]').forEach(node=>{
     node.style.cursor = 'pointer';
-    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.eid));
+    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.eid, node.dataset.date));
   });
   el.querySelectorAll('.cal-week-event[data-kind="task"]').forEach(node=>{
     node.addEventListener('click', ()=> openEdit(node.dataset.id));
   });
   el.querySelectorAll('.cal-week-event[data-kind="routine"]').forEach(node=>{
-    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.id));
+    node.addEventListener('click', ()=> openRoutineEdit(node.dataset.id, node.dataset.date));
   });
   el.querySelectorAll('.chk-cal-done').forEach(cb=>{
     cb.addEventListener('change', ()=>{
@@ -1014,7 +1101,7 @@ function renderChart(){
   el.querySelectorAll('.cal-month-event-line').forEach(line=>{
     line.addEventListener('click', (e)=>{
       e.stopPropagation();
-      if(line.dataset.kind==='routine') openRoutineEdit(line.dataset.id);
+      if(line.dataset.kind==='routine') openRoutineEdit(line.dataset.id, line.dataset.date);
       else openEdit(line.dataset.id);
     });
   });
@@ -1054,8 +1141,7 @@ function renderAgenda(){
 
   if(showRoutines && routines.length){
     Object.keys(groups).forEach(date=>{
-      const weekday = new Date(date+'T00:00:00').getDay();
-      const matches = routines.filter(r=>r.days.includes(weekday));
+      const matches = routines.filter(r=>routineMatchesDate(r,date));
       matches.forEach(r=> groups[date].push({...r, __routine:true, time:r.start}));
     });
   }
@@ -1082,7 +1168,7 @@ function renderAgenda(){
             <div class="item-sub">${t.time||''}${t.end?' – '+t.end:''}</div>
           </div>
           <div class="item-actions">
-            <button class="icon-btn btn-redit" data-id="${t.id}" title="Editar rutina">✎</button>
+            <button class="icon-btn btn-redit" data-id="${t.id}" data-date="${date}" title="Editar rutina">✎</button>
           </div>
         </div>`;
         return;
@@ -1109,7 +1195,7 @@ function renderAgenda(){
   attachAgendaControls();
 
   el.querySelectorAll('.btn-redit').forEach(b=>{
-    b.addEventListener('click', ()=> openRoutineEdit(b.dataset.id));
+    b.addEventListener('click', ()=> openRoutineEdit(b.dataset.id, b.dataset.date));
   });
   el.querySelectorAll('.chk-routine-done').forEach(cb=>{
     cb.addEventListener('change', ()=>{
@@ -1262,9 +1348,12 @@ function openNew(){
   document.getElementById('fTime').value='';
   document.getElementById('fStart').value='';
   document.getElementById('fEnd').value='';
+  document.getElementById('fStartDate').value='';
+  document.getElementById('fEndDate').value='';
   document.getElementById('fNotes').value='';
   document.getElementById('fImportant').checked=false;
   document.getElementById('modeToggleWrap').style.display='block';
+  document.getElementById('taskDeleteRow').style.display='none';
   taskSelectedDays = [1,2,3,4,5];
   refreshTaskDayChips();
   setTaskMode('once');
@@ -1307,11 +1396,36 @@ function openEdit(id){
   document.getElementById('fNotes').value=t.notes||'';
   document.getElementById('fImportant').checked=!!t.important;
   document.getElementById('modeToggleWrap').style.display='none';
+  document.getElementById('taskDeleteRow').style.display='flex';
   setTaskMode('once');
   overlay.classList.add('open');
 }
 
 document.getElementById('btnNew').addEventListener('click', openNew);
+document.getElementById('btnDeleteTask').addEventListener('click', ()=>{
+  if(!editingId) return;
+  if(!confirm('¿Eliminar esta tarea?')) return;
+  tasks = tasks.filter(x=>x.id!==editingId);
+  saveTasks();
+  overlay.classList.remove('open');
+  render();
+});
+document.getElementById('btnDuplicateTask').addEventListener('click', ()=>{
+  const input = document.getElementById('duplicateDateInput');
+  if(input.showPicker) input.showPicker();
+  else input.click();
+});
+document.getElementById('duplicateDateInput').addEventListener('change', function(){
+  if(!editingId || !this.value) return;
+  const t = tasks.find(x=>x.id===editingId);
+  if(!t) return;
+  const targetDate = this.value;
+  tasks.push({...t, id:uid(), date:targetDate, done:false});
+  saveTasks();
+  this.value='';
+  render();
+  alert(`Tarea duplicada al ${fmtDateLabel(targetDate)}.`);
+});
 document.getElementById('btnCancel').addEventListener('click', ()=> overlay.classList.remove('open'));
 overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.remove('open'); });
 
@@ -1350,7 +1464,9 @@ document.getElementById('btnSave').addEventListener('click', ()=>{
     if(!start){ alert('Por favor indica la hora de inicio.'); return; }
     if(taskSelectedDays.length===0){ alert('Selecciona al menos un día.'); return; }
     const end = document.getElementById('fEnd').value;
-    routines.push({id:uid(), title, emoji:emojiFor(category), start, end, days:taskSelectedDays.slice(), category, notes});
+    const startDate = document.getElementById('fStartDate').value;
+    const endDate = document.getElementById('fEndDate').value;
+    routines.push({id:uid(), title, emoji:emojiFor(category), start, end, days:taskSelectedDays.slice(), category, notes, startDate, endDate});
     saveRoutines();
   }
   overlay.classList.remove('open');
@@ -1391,32 +1507,121 @@ function refreshDayChips(){
 
 function openRoutineNew(){
   editingRoutineId = null;
+  routineEditContextDate = null;
   selectedDays = [1,2,3,4,5];
   document.getElementById('routineModalTitle').textContent = 'Nueva actividad diaria';
   document.getElementById('rEmoji').value='';
   document.getElementById('rTitle').value='';
   document.getElementById('rStart').value='';
   document.getElementById('rEnd').value='';
+  document.getElementById('routineDeleteRow').style.display='none';
   refreshDayChips();
   overlayRoutine.classList.add('open');
 }
 
-function openRoutineEdit(id){
+function openRoutineEdit(id, dateStr){
   const r = routines.find(x=>x.id===id);
   if(!r) return;
   editingRoutineId = id;
+  routineEditContextDate = dateStr || null;
   selectedDays = r.days.slice();
   document.getElementById('routineModalTitle').textContent = 'Editar actividad diaria';
   document.getElementById('rEmoji').value=r.emoji||'';
   document.getElementById('rTitle').value=r.title;
   document.getElementById('rStart').value=r.start;
   document.getElementById('rEnd').value=r.end||'';
+  document.getElementById('routineDeleteRow').style.display='flex';
+  const btnThisDate = document.getElementById('btnDeleteThisDate');
+  if(routineEditContextDate){
+    const dObj = new Date(routineEditContextDate+'T00:00:00');
+    btnThisDate.textContent = `🗑️ Eliminar solo el ${dObj.getDate()} ${MONTHS_SHORT[dObj.getMonth()]}`;
+    btnThisDate.style.display='inline-block';
+  } else {
+    btnThisDate.style.display='none';
+  }
   refreshDayChips();
   overlayRoutine.classList.add('open');
 }
 
 document.getElementById('btnRoutineCancel').addEventListener('click', ()=> overlayRoutine.classList.remove('open'));
 overlayRoutine.addEventListener('click', (e)=>{ if(e.target===overlayRoutine) overlayRoutine.classList.remove('open'); });
+
+document.getElementById('btnDeleteThisDate').addEventListener('click', ()=>{
+  if(!editingRoutineId || !routineEditContextDate) return;
+  if(!confirm('¿Eliminar esta actividad solo para esa fecha? Seguirá apareciendo en los demás días.')) return;
+  const r = routines.find(x=>x.id===editingRoutineId);
+  if(r){
+    if(!r.exceptions) r.exceptions = [];
+    if(!r.exceptions.includes(routineEditContextDate)) r.exceptions.push(routineEditContextDate);
+    saveRoutines();
+  }
+  overlayRoutine.classList.remove('open');
+  render();
+});
+
+document.getElementById('btnDeleteAllDates').addEventListener('click', ()=>{
+  if(!editingRoutineId) return;
+  if(!confirm('¿Eliminar esta actividad de TODAS las fechas en que se repite? Esta acción no se puede deshacer.')) return;
+  routines = routines.filter(x=>x.id!==editingRoutineId);
+  saveRoutines();
+  overlayRoutine.classList.remove('open');
+  render();
+});
+
+let dupSourceRoutineId = null;
+let dupSelectedDays = [];
+const overlayDuplicateRoutine = document.getElementById('overlayDuplicateRoutine');
+
+document.getElementById('btnDuplicateRoutine').addEventListener('click', ()=>{
+  if(!editingRoutineId) return;
+  const r = routines.find(x=>x.id===editingRoutineId);
+  if(!r) return;
+  dupSourceRoutineId = editingRoutineId;
+  dupSelectedDays = r.days.slice();
+  document.getElementById('dupRoutineTitle').textContent = r.title;
+  refreshDupDayChips();
+  overlayRoutine.classList.remove('open');
+  overlayDuplicateRoutine.classList.add('open');
+});
+
+document.querySelectorAll('.day-chip-dup').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const d = Number(chip.dataset.day);
+    if(dupSelectedDays.includes(d)) dupSelectedDays = dupSelectedDays.filter(x=>x!==d);
+    else dupSelectedDays.push(d);
+    refreshDupDayChips();
+  });
+});
+document.querySelectorAll('.preset-btn-dup').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const p = btn.dataset.preset;
+    if(p==='weekdays') dupSelectedDays=[1,2,3,4,5];
+    if(p==='weekend') dupSelectedDays=[0,6];
+    if(p==='all') dupSelectedDays=[0,1,2,3,4,5,6];
+    refreshDupDayChips();
+  });
+});
+function refreshDupDayChips(){
+  document.querySelectorAll('.day-chip-dup').forEach(chip=>{
+    chip.classList.toggle('selected', dupSelectedDays.includes(Number(chip.dataset.day)));
+  });
+}
+
+document.getElementById('btnDupCancel').addEventListener('click', ()=> overlayDuplicateRoutine.classList.remove('open'));
+overlayDuplicateRoutine.addEventListener('click', (e)=>{ if(e.target===overlayDuplicateRoutine) overlayDuplicateRoutine.classList.remove('open'); });
+
+document.getElementById('btnDupConfirm').addEventListener('click', ()=>{
+  if(!dupSourceRoutineId) return;
+  if(dupSelectedDays.length===0){ alert('Selecciona al menos un día.'); return; }
+  const r = routines.find(x=>x.id===dupSourceRoutineId);
+  if(!r) return;
+  const copy = {...r, id:uid(), days:dupSelectedDays.slice(), exceptions:[]};
+  routines.push(copy);
+  saveRoutines();
+  overlayDuplicateRoutine.classList.remove('open');
+  render();
+});
+
 
 document.getElementById('btnRoutineSave').addEventListener('click', ()=>{
   const title = document.getElementById('rTitle').value.trim();
